@@ -39,6 +39,7 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
       .then((res) => {
         const events = res.data;
         let prettyResponse = "";
+        let card;
         if (events.length === 0) {
           prettyResponse = `There aren't any upcoming events.`;
         } else {
@@ -47,19 +48,22 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
           const location = event.venue.name;
           const eventUrl = event.link;
           prettyResponse = `The next meetup is "` + name + `" at ` + location + `.`;
-          agent.add(new Card({
+          card = new Card({
             title: name,
             buttonText: `Open on Meetup.com`,
             buttonUrl: eventUrl
-          }));
+          });
         }
 
         agent.add(prettyResponse + ` What else can I help with?`);
+        if (card !== undefined) {
+          agent.add(card);
+        }
         return;
       })
       .catch((err) => {
         console.log('Error: ' + err);
-        agent.add(`There was an error`);
+        agent.add(`Sorry, I wasn't able to look up the next meetup. Can I help with anything else?`);
       });
    }
 
