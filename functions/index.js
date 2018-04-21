@@ -80,9 +80,10 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
 
   // Run the proper function handler based on the matched Dialogflow intent name
   let intentMap = new Map();
-  intentMap.set('Default Welcome Intent', welcome);
-  intentMap.set('Default Fallback Intent', fallback);
-   intentMap.set('Next Meetup', nextMeetup);
+  intentMap.set('input.welcome', welcome);
+  intentMap.set('input.unknown', fallback);
+  intentMap.set('meetup.next', nextMeetup);
+  intentMap.set('suggestion.nextmeetup.yes', nextMeetup);
   // intentMap.set('your intent name here', googleAssistantHandler);
   agent.handleRequest(intentMap);
 });
