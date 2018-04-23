@@ -9,76 +9,90 @@
 'use strict';
 
 const functions = require('firebase-functions'); 
-const {WebhookClient} = require('dialogflow-fulfillment');
-const {Card, Suggestion} = require('dialogflow-fulfillment');
-
+const {
+  dialogflow,
+  BasicCard,
+  BrowseCarousel,
+  BrowseCarouselItem,
+  Button,
+  Carousel,
+  Image,
+  LinkOutSuggestion,
+  List,
+  MediaObject,
+  Suggestions,
+  SimpleResponse,
+ } = require('actions-on-google');
 const axios = require('axios');
-const meetupUrl = 'https://api.meetup.com/GDG-Kansas-City/events?&sign=true&photo-host=public&page=2&status=upcoming&only=id,venue.name,utc_offset,time,name,link';
+const meetupUrl = 'https://api.meetup.com/GDG-Kansas-City/events?&sign=true&photo-host=public&page=1&fields=featured_photo&only=id,venue,time,name,link,featured_photo.photo_link,description';
+
+const Helpers = require('./helpers');
 
 process.env.DEBUG = 'dialogflow:debug'; // enables lib debugging statements
 
-exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, response) => {
-  const agent = new WebhookClient({ request, response });
-  console.log('Dialogflow Request headers: ' + JSON.stringify(request.headers));
-  console.log('Dialogflow Request body: ' + JSON.stringify(request.body));
+const app = dialogflow();
 
-  function welcome(agent) {
-    agent.add(`Welcome to my agent!`);
-  }
+app.intent('meetup.next', conv => {
+  return axios.get(meetupUrl)
+    .then((res) => {
+      const events = res.data;
+      let response = "";
+      let card;
 
-  function fallback(agent) {
-    agent.add(`I didn't understand`);
-    agent.add(`I'm sorry, can you try again?`);
-}
+      if (events.length === 0) {
+        response = `There aren't any upcoming events.`;
+      } else {
+        const event = events[0];
+        const title = event.name;
+        const description = event.description;
+        const eventUrl = event.link;
+        let photoUrl = event.featured_photo.photo_link;
 
-   // Uncomment and edit to make your own intent handler
-   // uncomment `intentMap.set('your intent name here', yourFunctionHandler);`
-   // below to get this function to be run when a Dialogflow intent is matched
-   function nextMeetup(agent) {
-     return axios.get(meetupUrl)
-      .then((res) => {
-        const events = res.data;
-        let prettyResponse = "";
-        if (events.length === 0) {
-          prettyResponse = `There aren't any upcoming events.`;
-        } else {
-          const event = events[0];
-          const name = event.name;
-          const location = event.venue.name;
-          const eventUrl = event.link;
-          prettyResponse = `The next meetup is "` + name + `" at ` + location + `.`;
-          agent.add(new Card({
-            title: name,
-            buttonText: `Open on Meetup.com`,
-            buttonUrl: eventUrl
-          }));
-        }
+        let epochTime = event.time + event.utc_offset;
+        let speakableDate = Helpers.formatDateTime(epochTime, 'dddd, MMMM Do');
+        let time = Helpers.formatDateTime(epochTime, 'h:mm a');
+        let speakableDateTime = speakableDate + ' at ' + time;
+        let displayableDate = Helpers.formatDateTime(epochTime, 'dddd M/D');
+        let displaybleDateTime = displayableDate + ', ' + time;
 
-        agent.add(prettyResponse + ` What else can I help with?`);
-        return;
-      })
-      .catch((err) => {
-        console.log('Error: ' + err);
-        agent.add(`There was an error`);
+        const venue = event.venue;
+        const venueName = venue.name;
+        const addr1 = venue.address_1;
+        const addr2 = venue.address_2;
+        const city = venue.city;
+        const state = venue.state;
+        const address = Helpers.makeAddress(addr1, addr2, city, state);
+
+        let textOutput = `What else can I help with?`;
+        let speechOutput = `The next meetup is ` + title + ` at ` + venueName + ` on ` + speakableDateTime + `. ` + textOutput;
+        response = new SimpleResponse({text: '', speech: speechOutput});
+
+        // response = `The next meetup is "` + title + `" at ` + venueName + `.`;
+        card = new BasicCard({
+          title: title,
+          subtitle: displaybleDateTime + " at " + venueName,
+          text: description,
+          buttons: new Button({
+            title: 'Open on Meetup.com',
+            url: eventUrl
+          }),
+          image: new Image({
+            url: photoUrl,
+            alt: 'Event photo',
+          })
+        });
+      }
+
+      conv.ask(response);
+      if (card !== undefined) {
+        conv.ask(card);
+      }
+      return;
+    })
+    .catch((err) => {
+      console.log('Error: ' + err);
+      conv.ask(`Sorry, I wasn't able to look up the next meetup. Can I help with anything else?`);
       });
-   }
-
-  // // Uncomment and edit to make your own Google Assistant intent handler
-  // // uncomment `intentMap.set('your intent name here', googleAssistantHandler);`
-  // // below to get this function to be run when a Dialogflow intent is matched
-  // function googleAssistantHandler(agent) {
-  //   let conv = agent.conv(); // Get Actions on Google library conv instance
-  //   conv.ask('Hello from the Actions on Google client library!') // Use Actions on Google library
-  //   agent.add(conv); // Add Actions on Google library responses to your agent's response
-  // }
-  // // See https://github.com/dialogflow/dialogflow-fulfillment-nodejs/tree/master/samples/actions-on-google
-  // // for a complete Dialogflow fulfillment library Actions on Google client library v2 integration sample
-
-  // Run the proper function handler based on the matched Dialogflow intent name
-  let intentMap = new Map();
-  intentMap.set('Default Welcome Intent', welcome);
-  intentMap.set('Default Fallback Intent', fallback);
-   intentMap.set('Next Meetup', nextMeetup);
-  // intentMap.set('your intent name here', googleAssistantHandler);
-  agent.handleRequest(intentMap);
 });
+
+exports.dialogflowFirebaseFulfillment = functions.https.onRequest(app);
