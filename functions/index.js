@@ -24,7 +24,7 @@ const {
   SimpleResponse,
  } = require('actions-on-google');
 const axios = require('axios');
-const meetupUrl = 'https://api.meetup.com/GDG-Kansas-City/events?&sign=true&photo-host=public&page=1&fields=featured_photo&only=id,venue,time,name,link,featured_photo.photo_link,description';
+const meetupUrl = 'https://api.meetup.com/GDG-Kansas-City/events?&sign=true&photo-host=public&page=1&fields=featured_photo&only=id,venue,time,utc_offset,name,link,featured_photo.photo_link,description';
 
 const Helpers = require('./helpers');
 
@@ -71,7 +71,7 @@ app.intent('meetup.next', conv => {
         card = new BasicCard({
           title: title,
           subtitle: displaybleDateTime + " at " + venueName,
-          text: description,
+          // text: description, // TODO: shorten
           buttons: new Button({
             title: 'Open on Meetup.com',
             url: eventUrl
