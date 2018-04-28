@@ -8,7 +8,7 @@ exports.helloWorld = functions.https.onRequest((request, response) => {
 // Dialogflow fulfillment
 'use strict';
 
-const { dialogflow, Permission, Suggestions } = require('actions-on-google');
+const { dialogflow, Permission, Suggestions, Confirmation } = require('actions-on-google');
 const axios = require('axios');
 
 const { ConversationHelper } = require('./helpers');
@@ -24,7 +24,15 @@ const app = dialogflow()
 
 app.intent('input.welcome', conv => {
   console.log('userValue = ' + JSON.stringify(conv.user));
-  conv.helper.askForMore();
+  let name = conv.user.name.given;
+  if (name !== undefined) {
+    conv.ask(`Hi ` + name + `! What can I do for you today?`);
+  } else {
+    conv.helper.askOneOf([
+      `Hi there! What can I do for you?`,
+      `Hello, how can I help you?`
+    ]);
+  }
 });
 
 app.intent('recovery.fail', conv => {
@@ -43,9 +51,22 @@ app.intent('demo.name.permission', (conv, params, granted) => {
   if (granted) {
     let name = conv.user.name;
     conv.user.storage.name = name;
-    conv.ask(`Thanks ` + name.given + `. I'll use your name during this conversation.`);
+
+    // https://developers.google.com/actions/assistant/save-data#nodejs
+    conv.ask(new Confirmation(`Thanks ` + name.given + `! Would you like me to save your name so I don't have to ask every time? Otherwise, I'll only remember during this conversation.`));
+    conv.contexts.set('confirmation-request-NAME', 1);
   } else {
     conv.ask(`No problem. Let me know if you want me to use your name later.`);
+    conv.helper.askForMore();
+  }
+});
+
+app.intent('demo.name.persistconfirmation', (conv, params, granted) => {
+  if (granted) {
+    conv.user.storage.name = conv.user.name;
+    conv.ask(`I'll remember your name for next time.`);
+  } else {
+    conv.ask(`No problem. You can ask me again later if you change your mind.`);
   }
   conv.helper.askForMore();
 });
