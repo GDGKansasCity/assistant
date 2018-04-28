@@ -1,6 +1,9 @@
 const { SimpleResponse, BasicCard, Button, Image } = require('actions-on-google');
-const Helpers = require('./helpers');
+const { DataHelper } = require('./helpers');
 
+const dataHelper = new DataHelper();
+
+// Returns { simpleResponse, basicCard }
 exports.mentionMeetup = function (conv, event) {
   const title = event.name;
   const description = event.description;
@@ -8,10 +11,10 @@ exports.mentionMeetup = function (conv, event) {
   let photoUrl = event.featured_photo.photo_link;
 
   let epochTime = event.time + event.utc_offset;
-  let speakableDate = Helpers.formatDateTime(epochTime, 'dddd, MMMM Do');
-  let time = Helpers.formatDateTime(epochTime, 'h:mm a');
+  let time = dataHelper.formatDateTime(epochTime, 'h:mm a');
+  let speakableDate = dataHelper.formatDateTime(epochTime, 'dddd, MMMM Do');
   let speakableDateTime = speakableDate + ' at ' + time;
-  let displayableDate = Helpers.formatDateTime(epochTime, 'dddd M/D');
+  let displayableDate = dataHelper.formatDateTime(epochTime, 'dddd M/D');
   let displaybleDateTime = displayableDate + ', ' + time;
 
   const venue = event.venue;
@@ -20,10 +23,10 @@ exports.mentionMeetup = function (conv, event) {
   const addr2 = venue.address_2;
   const city = venue.city;
   const state = venue.state;
-  const address = Helpers.makeAddress(addr1, addr2, city, state);
+  const address = dataHelper.makeAddress(addr1, addr2, city, state);
 
   let speech = "The next meetup is " + title + " at " + venueName + " on " + speakableDateTime;
-  let text = "Here's the next meetup."
+  let text = "Here's some information on the next meetup."
   conv.ask(new SimpleResponse({text: text, speech: speech}));
 
   // response = `The next meetup is "` + title + `" at ` + venueName + `.`;
