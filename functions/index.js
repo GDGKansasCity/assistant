@@ -8,7 +8,7 @@ exports.helloWorld = functions.https.onRequest((request, response) => {
 // Dialogflow fulfillment
 'use strict';
 
-const { dialogflow } = require('actions-on-google');
+const { dialogflow, Permission, Suggestions } = require('actions-on-google');
 const axios = require('axios');
 
 const { ConversationHelper } = require('./helpers');
@@ -21,6 +21,11 @@ const app = dialogflow()
   .middleware(conv => {
     conv.helper = new ConversationHelper(conv);
   });
+
+app.intent('recovery.fail', conv => {
+  conv.ask(`Sorry, I'm having trouble understanding what you want. Try asking about the next meetup or what we do.`);
+  conv.ask(new Suggestions(`Next Meetup`, `What is GDG`));
+});
 
 app.intent('meetup.next', conv => {
   return axios.get(meetupUrl)
@@ -38,7 +43,7 @@ app.intent('meetup.next', conv => {
     .catch((err) => {
       console.log('Error: ' + err);
       conv.ask(`Sorry, I wasn't able to look up the next meetup. Can I help with anything else?`);
-      });
+    });
 });
 
 exports.dialogflowFirebaseFulfillment = functions.https.onRequest(app);
