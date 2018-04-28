@@ -12,9 +12,9 @@ const functions = require('firebase-functions');
 const { dialogflow } = require('actions-on-google');
 
 const axios = require('axios');
-const { randomize, Randomization } = require('randomize');
 
 const Helpers = require('./helpers');
+const pickOneOf = Helpers.pickOneOf
 const Events = require('./events');
 const meetupUrl = 'https://api.meetup.com/GDG-Kansas-City/events?&sign=true&photo-host=public&page=1&fields=featured_photo&only=id,venue,time,utc_offset,name,link,featured_photo.photo_link,description';
 
@@ -26,11 +26,11 @@ class Helper {
   }
 
   askForMore() {
-    this.conv.ask(new Randomization(
+    this.conv.ask(pickOneOf([
       `What else can I do for you?`,
       `How else can I help today?`,
       `What else can I help with?`
-    ));
+    ]));
   }
 }
 

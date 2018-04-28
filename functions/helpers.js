@@ -14,3 +14,7 @@ exports.formatDateTime = function(milliseconds, format) {
   let formatted = d.format(format);
   return formatted;
 }
+
+exports.pickOneOf = function(array) {
+  return array[Math.floor(Math.random()*array.length)];
+}
