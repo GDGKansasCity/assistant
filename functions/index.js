@@ -22,9 +22,32 @@ const app = dialogflow()
     conv.helper = new ConversationHelper(conv);
   });
 
+app.intent('input.welcome', conv => {
+  console.log('userValue = ' + JSON.stringify(conv.user));
+  conv.helper.askForMore();
+});
+
 app.intent('recovery.fail', conv => {
   conv.ask(`Sorry, I'm having trouble understanding what you want. Try asking about the next meetup or what we do.`);
   conv.ask(new Suggestions(`Next Meetup`, `What is GDG`));
+});
+
+app.intent('demo.name', conv => {
+  conv.ask(new Permission({
+    context: 'To address you by name',
+    permissions: 'NAME'
+  }));
+});
+
+app.intent('demo.name.permission', (conv, params, granted) => {
+  if (granted) {
+    let name = conv.user.name;
+    conv.user.storage.name = name;
+    conv.ask(`Thanks ` + name.given + `. I'll use your name during this conversation.`);
+  } else {
+    conv.ask(`No problem. Let me know if you want me to use your name later.`);
+  }
+  conv.helper.askForMore();
 });
 
 app.intent('meetup.next', conv => {
