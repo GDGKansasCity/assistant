@@ -1,11 +1,9 @@
-// // Create and Deploy Your First Cloud Functions
-// // https://firebase.google.com/docs/functions/write-firebase-functions
-//
-// exports.helloWorld = functions.https.onRequest((request, response) => {
-//  response.send("Hello from Firebase!");
-// });
-// See https://github.com/dialogflow/dialogflow-fulfillment-nodejs
-// for Dialogflow fulfillment library docs, samples, and to report issues
+// Hello world to check up status
+exports.helloWorld = functions.https.onRequest((request, response) => {
+ response.send("Hello from Firebase!");
+});
+
+// Dialogflow fulfillment
 'use strict';
 
 const functions = require('firebase-functions'); 
