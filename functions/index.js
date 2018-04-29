@@ -13,6 +13,7 @@ const axios = require('axios');
 
 const { ConversationHelper } = require('./helpers');
 const Events = require('./events');
+const { Meetup, Group } = require('./meetup');
 const meetupUrl = 'https://api.meetup.com/GDG-Kansas-City/events?&sign=true&photo-host=public&page=1&fields=featured_photo&only=id,venue,time,utc_offset,name,link,featured_photo.photo_link,description';
 
 process.env.DEBUG = 'dialogflow:debug'; // enables lib debugging statements
@@ -89,5 +90,46 @@ app.intent('meetup.next', conv => {
       conv.ask(`Sorry, I wasn't able to look up the next meetup. Can I help with anything else?`);
     });
 });
+
+app.intent('group.closest', conv => {
+  let meetup = new Meetup();
+  return meetup.nearbyGroups(0, 0)
+    .then((groups) => {
+      console.log('group.closest promise.then');
+      if (groups.length === 0) {
+        conv.ask(`Looks like there aren't any GDGs near you.`);
+      } else {
+        conv.ask(`Here are the closest groups to you.`);
+        conv.helper.showGroup(groups[0]);
+      }
+      conv.helper.askForMore();
+      return;
+    })
+    .catch((err) => {
+      console.error('Error: ' + err);
+      conv.ask(`Oops, I ran into a problem finding groups near you.`);
+      conv.helper.askForMore();
+    });
+});
+
+// app.intent('group.closest', conv => {
+//   console.log('including ?');
+//   return axios.get('https://api.meetup.com/pro/gdg/groups?key=' + Keys.meetup_token + '&sign=true')
+//     .then((res) => {
+//       console.log('pro groups data = ' + JSON.stringify(res.data));
+//       conv.ask(`Look at the logs for the group data.`);
+//       return;
+//     })
+//     .catch((err) => {
+//       console.error('Error: ' + err);
+//       console.log(err.response);
+//       console.log(err.response.data);
+//       conv.ask(`Look at the logs for an error.`);
+//     })
+//     .then(() => {
+//       conv.helper.askForMore();
+//       return;
+//     });
+// });
 
 exports.dialogflowFirebaseFulfillment = functions.https.onRequest(app);

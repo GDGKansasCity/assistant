@@ -1,4 +1,5 @@
 const Moment = require('moment');
+const { BasicCard, Image } = require('actions-on-google');
 
 class DataHelper {
   makeAddress(address1, address2, city, state) {
@@ -36,6 +37,18 @@ class ConversationHelper {
       `How else can I help today?`,
       `What else can I help with?`
     ]);
+  }
+
+  showGroup(group) {
+    console.log('showGroup()');
+    this.conv.ask(new BasicCard({
+      title: group.name,
+      subtitle: group.location,
+      image: new Image({
+        url: group.imageUrl,
+        alt: group.name + ' image'
+      })
+    }));
   }
 }
 
