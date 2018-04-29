@@ -8,7 +8,7 @@ exports.helloWorld = functions.https.onRequest((request, response) => {
 // Dialogflow fulfillment
 'use strict';
 
-const { dialogflow, Permission, Suggestions, Confirmation } = require('actions-on-google');
+const { dialogflow, Permission, Suggestions, Confirmation, SimpleResponse } = require('actions-on-google');
 const axios = require('axios');
 
 const { ConversationHelper } = require('./helpers');
@@ -95,14 +95,24 @@ app.intent('group.closest', conv => {
   let meetup = new Meetup();
   return meetup.nearbyGroups(0, 0)
     .then((groups) => {
-      console.log('group.closest promise.then');
       if (groups.length === 0) {
         conv.ask(`Looks like there aren't any GDGs near you.`);
+        conv.helper.askForMore();
+
+      } else if (groups.length === 1) {
+        let group = groups[0];
+        conv.ask(new SimpleResponse({
+          text: `Here's the closest group to you.`,
+          speech: group.name + ` is the closest group to you.`
+        }));
+        conv.helper.showGroup(group);
+        conv.helper.askForMore();
+
       } else {
         conv.ask(`Here are the closest groups to you.`);
-        conv.helper.showGroup(groups[0]);
+        conv.helper.selectFromGroups(groups);
+        // TODO: listen for selection
       }
-      conv.helper.askForMore();
       return;
     })
     .catch((err) => {

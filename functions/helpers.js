@@ -1,5 +1,5 @@
 const Moment = require('moment');
-const { BasicCard, Image } = require('actions-on-google');
+const { BasicCard, Image, List, SimpleResponse } = require('actions-on-google');
 
 class DataHelper {
   makeAddress(address1, address2, city, state) {
@@ -48,6 +48,29 @@ class ConversationHelper {
         url: group.imageUrl,
         alt: group.name + ' image'
       })
+    }));
+  }
+
+  selectFromGroups(groups) {
+    let items = {};
+    for (var i = groups.length - 1; i >= 0; i--) {
+      var key = i.toString();
+      let group = groups[i];
+      let item = {
+        synonyms: [group.name, group.city, group.location],
+        title: group.name,
+        description: group.location,
+        image: new Image({
+          url: group.imageUrl,
+          alt: group.name + ' image'
+        })
+      };
+      items[i] = { key: item };
+      console.log('item: ' + JSON.stringify(items[i]));
+    }
+    this.conv.ask(new List({
+      title: 'GDGs Near You',
+      items: items
     }));
   }
 }

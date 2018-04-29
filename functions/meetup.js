@@ -8,15 +8,16 @@ const directories = {
 };
 
 const params = {
-  'NearbyGroups': 'photo-host=public&lon=-94.5883400&text=gdg&lat=39.1695180&page=3&only=name,localized_location,group_photo.photo_link',
+  'NearbyGroups': 'photo-host=public&lon=-94.5883400&text=gdg&lat=39.1695180&page=3&only=name,city,localized_location,group_photo.photo_link',
   'EventsForGroup': 'photo-host=public&page=1&fields=featured_photo&only=id,venue,time,utc_offset,name,link,featured_photo.photo_link,description'
 };
 
 class Group {
-  constructor(name, location, imageUrl) {
+  constructor(name, city, location, imageUrl) {
     this.name = name;
+    this.city = city;
     this.location = location;
-    this.imageUrl;
+    this.imageUrl = imageUrl;
   }
 }
 
@@ -29,7 +30,7 @@ class Meetup {
   nearbyGroups(lon, lat) {
     // return this.do('NearbyGroups')
     return new Promise((resolve, reject) => {
-        resolve(JSON.parse('[{"group_photo":{"photo_link":"https://secure.meetupstatic.com/photos/event/d/d/6/d/600_458396685.jpeg"},"localized_location":"Kansas City, MO","name":"Google Developer Group Kansas City"}]'));
+        resolve(JSON.parse('[{"group_photo":{"photo_link":"https://secure.meetupstatic.com/photos/event/d/d/6/d/600_458396685.jpeg"},"localized_location":"Kansas City, MO","city":"Kansas City","name":"Google Developer Group Kansas City"}]'));
       })
       .then((res) => {
         const groups = res;//.data;
@@ -63,9 +64,10 @@ class Meetup {
 
   parseGroup(group) {
     let name = group.name;
+    let city = group.city;
     let location = group.localized_location;
     let imageUrl = group.group_photo.photo_link;
-    return new Group(name, location, imageUrl);
+    return new Group(name, city, location, imageUrl);
   }
 }
 
