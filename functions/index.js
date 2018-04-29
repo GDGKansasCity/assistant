@@ -41,14 +41,14 @@ app.intent('recovery.fail', conv => {
   conv.ask(new Suggestions(`Next Meetup`, `What is GDG`));
 });
 
-app.intent('demo.name', conv => {
+app.intent('usename', conv => {
   conv.ask(new Permission({
     context: 'To address you by name',
     permissions: 'NAME'
   }));
 });
 
-app.intent('demo.name.permission', (conv, params, granted) => {
+app.intent('usename.permission', (conv, params, granted) => {
   if (granted) {
     let name = conv.user.name;
     conv.user.storage.name = name;
@@ -62,7 +62,7 @@ app.intent('demo.name.permission', (conv, params, granted) => {
   }
 });
 
-app.intent('demo.name.persistconfirmation', (conv, params, granted) => {
+app.intent('usename.persistconfirmation', (conv, params, granted) => {
   if (granted) {
     conv.user.storage.name = conv.user.name;
     conv.ask(`I'll remember your name for next time.`);
