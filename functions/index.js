@@ -8,11 +8,12 @@ exports.helloWorld = functions.https.onRequest((request, response) => {
 // Dialogflow fulfillment
 'use strict';
 
-const { dialogflow, Permission, Suggestions, Confirmation } = require('actions-on-google');
+const { dialogflow, Permission, Suggestions, Confirmation, SimpleResponse } = require('actions-on-google');
 const axios = require('axios');
 
 const { ConversationHelper } = require('./helpers');
 const Events = require('./events');
+const { Meetup, Group } = require('./meetup');
 const meetupUrl = 'https://api.meetup.com/GDG-Kansas-City/events?&sign=true&photo-host=public&page=1&fields=featured_photo&only=id,venue,time,utc_offset,name,link,featured_photo.photo_link,description';
 
 process.env.DEBUG = 'dialogflow:debug'; // enables lib debugging statements
@@ -40,14 +41,14 @@ app.intent('recovery.fail', conv => {
   conv.ask(new Suggestions(`Next Meetup`, `What is GDG`));
 });
 
-app.intent('demo.name', conv => {
+app.intent('usename', conv => {
   conv.ask(new Permission({
     context: 'To address you by name',
     permissions: 'NAME'
   }));
 });
 
-app.intent('demo.name.permission', (conv, params, granted) => {
+app.intent('usename.permission', (conv, params, granted) => {
   if (granted) {
     let name = conv.user.name;
     conv.user.storage.name = name;
@@ -61,7 +62,7 @@ app.intent('demo.name.permission', (conv, params, granted) => {
   }
 });
 
-app.intent('demo.name.persistconfirmation', (conv, params, granted) => {
+app.intent('usename.persistconfirmation', (conv, params, granted) => {
   if (granted) {
     conv.user.storage.name = conv.user.name;
     conv.ask(`I'll remember your name for next time.`);
@@ -89,5 +90,56 @@ app.intent('meetup.next', conv => {
       conv.ask(`Sorry, I wasn't able to look up the next meetup. Can I help with anything else?`);
     });
 });
+
+app.intent('group.closest', conv => {
+  let meetup = new Meetup();
+  return meetup.nearbyGroups(0, 0)
+    .then((groups) => {
+      if (groups.length === 0) {
+        conv.ask(`Looks like there aren't any GDGs near you.`);
+        conv.helper.askForMore();
+
+      } else if (groups.length === 1) {
+        let group = groups[0];
+        conv.ask(new SimpleResponse({
+          text: `Here's the closest group to you.`,
+          speech: group.name + ` is the closest group to you.`
+        }));
+        conv.helper.showGroup(group);
+        conv.helper.askForMore();
+
+      } else {
+        conv.ask(`Here are the closest groups to you.`);
+        conv.helper.selectFromGroups(groups);
+        // TODO: listen for selection
+      }
+      return;
+    })
+    .catch((err) => {
+      console.error('Error: ' + err);
+      conv.ask(`Oops, I ran into a problem finding groups near you.`);
+      conv.helper.askForMore();
+    });
+});
+
+// app.intent('group.closest', conv => {
+//   console.log('including ?');
+//   return axios.get('https://api.meetup.com/pro/gdg/groups?key=' + Keys.meetup_token + '&sign=true')
+//     .then((res) => {
+//       console.log('pro groups data = ' + JSON.stringify(res.data));
+//       conv.ask(`Look at the logs for the group data.`);
+//       return;
+//     })
+//     .catch((err) => {
+//       console.error('Error: ' + err);
+//       console.log(err.response);
+//       console.log(err.response.data);
+//       conv.ask(`Look at the logs for an error.`);
+//     })
+//     .then(() => {
+//       conv.helper.askForMore();
+//       return;
+//     });
+// });
 
 exports.dialogflowFirebaseFulfillment = functions.https.onRequest(app);
