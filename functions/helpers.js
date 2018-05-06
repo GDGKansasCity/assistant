@@ -1,5 +1,5 @@
 const Moment = require('moment');
-const { BasicCard, Image, List, SimpleResponse } = require('actions-on-google');
+const { BasicCard, Image, List, SimpleResponse, Button } = require('actions-on-google');
 
 class DataHelper {
   makeAddress(address1, address2, city, state) {
@@ -71,6 +71,32 @@ class ConversationHelper {
     this.conv.ask(new List({
       title: 'GDGs Near You',
       items: items
+    }));
+  }
+
+  showEvent(event) {
+    console.log('showEvent()');
+
+    const dataHelper = new DataHelper();
+    let epochTime = event.time;
+    let time = dataHelper.formatDateTime(epochTime, 'h:mm a');
+    let speakableDate = dataHelper.formatDateTime(epochTime, 'dddd, MMMM Do');
+    let speakableDateTime = speakableDate + ' at ' + time;
+    let displayableDate = dataHelper.formatDateTime(epochTime, 'dddd M/D');
+    let displaybleDateTime = displayableDate + ', ' + time;
+
+    this.conv.ask(new BasicCard({
+      title: event.name,
+      subtitle: event.venueName, // TODO: address/time
+      // TODO: description: event.description,
+      image: new Image({
+        url: event.imageUrl,
+        alt: event.name + ' image'
+      }),
+      buttons: new Button({
+        title: 'Open on Meetup.com',
+        url: event.eventUrl
+      })
     }));
   }
 }

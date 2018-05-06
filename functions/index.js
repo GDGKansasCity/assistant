@@ -11,10 +11,8 @@ exports.helloWorld = functions.https.onRequest((request, response) => {
 const { dialogflow, Permission, Suggestions, Confirmation, SimpleResponse } = require('actions-on-google');
 const axios = require('axios');
 
-const { ConversationHelper } = require('./helpers');
-const Events = require('./events');
-const { Meetup, Group } = require('./meetup');
-const meetupUrl = 'https://api.meetup.com/GDG-Kansas-City/events?&sign=true&photo-host=public&page=1&fields=featured_photo&only=id,venue,time,utc_offset,name,link,featured_photo.photo_link,description';
+const { ConversationHelper, DataHelper } = require('./helpers');
+const { Meetup, Group, Event } = require('./meetup');
 
 process.env.DEBUG = 'dialogflow:debug'; // enables lib debugging statements
 
@@ -73,21 +71,32 @@ app.intent('usename.persistconfirmation', (conv, params, granted) => {
 });
 
 app.intent('meetup.next', conv => {
-  return axios.get(meetupUrl)
-    .then((res) => {
-      const events = res.data;
-      if (events.length === 0) {
-        conv.ask(`There aren't any upcoming events.`);
-      } else {
-        Events.mentionMeetup(conv, events[0]);
-      }
+  let meetupID = conv.user.storage.meetup
+  if (!meetupID) return conv.ask(`Find the nearest group first.`);
 
+  let meetup = new Meetup();
+  return meetup.eventsForGroup(conv.user.storage.meetup)
+    .then((events) => {
+      if (events.length === 0) {
+        conv.ask(`This group doesn't have any meetups scheduled yet.`);
+      } else {
+        // TODO: more than one
+        let event = events[0];
+        const dataHelper = new DataHelper();
+        let time = dataHelper.formatDateTime(event.time, 'h:mm a');
+        let speakableDate = dataHelper.formatDateTime(event.time, 'dddd, MMMM Do');
+        let speakableDateTime = speakableDate + ' at ' + time;
+        conv.ask(new SimpleResponse({
+          text: `Here's the next meetup.`,
+          speech: `The next meetup is ` + event.name + ` on ` + speakableDateTime
+        }));
+        conv.helper.showEvent(event);
+      }
       conv.helper.askForMore();
-      return;
     })
-    .catch((err) => {
-      console.log('Error: ' + err);
-      conv.ask(`Sorry, I wasn't able to look up the next meetup. Can I help with anything else?`);
+    .catch((error) => {
+      console.error(error);
+      conv.ask(`Whoops, I had trouble getting the next meetup. Can I help with anything else?`);
     });
 });
 
@@ -105,7 +114,7 @@ app.intent('group.closest.permission', (conv, params, granted) => {
 
   // TODO: on Google Home, support DEVICE_COARSE_LOCATION
   let location = conv.device.location.coordinates;
-  conv.user.data = { location: location };
+  conv.user.storage.location = location;
 
   let meetup = new Meetup();
   return meetup.nearbyGroups(location.longitude, location.latitude)
@@ -117,6 +126,9 @@ app.intent('group.closest.permission', (conv, params, granted) => {
 
       } else { // TODO: support lists
         let group = groups[0];
+
+        // TODO: need to confirm this?
+        conv.user.storage.meetup = group.meetupID;
 
         conv.ask(new SimpleResponse({
           text: `Here's the closest group to you.`,
@@ -158,25 +170,5 @@ app.intent('group.closest_old', conv => {
       conv.helper.askForMore();
     });
 });
-
-// app.intent('group.closest', conv => {
-//   console.log('including ?');
-//   return axios.get('https://api.meetup.com/pro/gdg/groups?key=' + Keys.meetup_token + '&sign=true')
-//     .then((res) => {
-//       console.log('pro groups data = ' + JSON.stringify(res.data));
-//       conv.ask(`Look at the logs for the group data.`);
-//       return;
-//     })
-//     .catch((err) => {
-//       console.error('Error: ' + err);
-//       console.log(err.response);
-//       console.log(err.response.data);
-//       conv.ask(`Look at the logs for an error.`);
-//     })
-//     .then(() => {
-//       conv.helper.askForMore();
-//       return;
-//     });
-// });
 
 exports.dialogflowFirebaseFulfillment = functions.https.onRequest(app);
