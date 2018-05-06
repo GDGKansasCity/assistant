@@ -92,6 +92,43 @@ app.intent('meetup.next', conv => {
 });
 
 app.intent('group.closest', conv => {
+  console.log('intent: group.closest');
+  conv.ask(new Permission({
+    context: 'To find the nearest GDG',
+    permissions: 'DEVICE_PRECISE_LOCATION'
+  }));
+});
+
+app.intent('group.closest.permission', (conv, params, granted) => {
+  console.log('intent: group.closest.permission');
+  if (!granted) return conv.ask('No worries');
+
+  // TODO: on Google Home, support DEVICE_COARSE_LOCATION
+  let location = conv.device.location.coordinates;
+  conv.user.data = { location: location };
+
+  let meetup = new Meetup();
+  return meetup.nearbyGroups(location.longitude, location.latitude)
+    .then((groups) => {
+      if (groups.length === 0) {
+        conv.ask(`Looks like there aren't any GDGs near you.`);
+        // TODO: start one
+        conv.helper.askForMore();
+
+      } else { // TODO: support lists
+        let group = groups[0];
+
+        conv.ask(new SimpleResponse({
+          text: `Here's the closest group to you.`,
+          speech: group.name + ` is the closest group to you.`
+        }));
+        conv.helper.showGroup(group);
+        conv.helper.askForMore();
+      }
+    });
+});
+
+app.intent('group.closest_old', conv => {
   let meetup = new Meetup();
   return meetup.nearbyGroups(0, 0)
     .then((groups) => {
