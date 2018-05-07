@@ -1,6 +1,7 @@
 const axios = require('axios');
 const { BasicCard, Image } = require('actions-on-google');
 const { DataHelper } = require('./helpers');
+const Secrets = require('./secrets.json');
 
 const baseUrl = "https://api.meetup.com/";
 const directories = {
@@ -8,8 +9,8 @@ const directories = {
   'EventsForGroup': ':urlname/events'
 };
 const queries = {
-  'NearbyGroups': 'photo-host=public&lon=-94.5883400&text=gdg&lat=39.1695180&page=3&only=name,city,localized_location,group_photo.photo_link,urlname',
-  'EventsForGroup': 'photo-host=public&page=1&fields=featured_photo&only=id,venue,time,utc_offset,name,link,featured_photo.photo_link,description'
+  'NearbyGroups': 'photo-host=secure&lon=:lon&text=Google+Developer+Group&lat=:lat&page=2&only=name,city,localized_location,group_photo.photo_link,urlname',
+  'EventsForGroup': 'photo-host=secure&page=1&fields=featured_photo&only=id,venue,time,utc_offset,name,link,featured_photo.photo_link,description'
 };
 
 // Meetup Pro url but requires a key we don't have
@@ -38,13 +39,18 @@ class Event {
 }
 
 class Meetup {
-  do(action, params) {
+  do(action, params, auth) {
     let dir = directories[action];
     let url = baseUrl + dir;
 
     let query = queries[action];
     if (query !== undefined) {
       url = url + "?" + query;
+    }
+
+    if (auth !== undefined && auth) {
+      url = url + (query === undefined ? "?" : "&");
+      url = url + "key=" + Secrets.meetupToken + "&sign=true";
     }
 
     let keys = Object.keys(params);
@@ -59,12 +65,13 @@ class Meetup {
   }
 
   nearbyGroups(lon, lat) {
-    // return this.do('NearbyGroups')
-    return new Promise((resolve, reject) => {
-        resolve(JSON.parse('[{"urlname":"GDG-Kansas-City","group_photo":{"photo_link":"https://secure.meetupstatic.com/photos/event/d/d/6/d/600_458396685.jpeg"},"localized_location":"Kansas City, MO","city":"Kansas City","name":"Google Developer Group Kansas City"}]'));
-      })
+    let params = {
+      lon: lon,
+      lat: lat
+    };
+    return this.do('NearbyGroups', params, true)
       .then((res) => {
-        const groups = res;//.data;
+        const groups = res.data;
         let array = [];
         for (var i = groups.length - 1; i >= 0; i--) {
           let group = groups[i];
@@ -96,7 +103,13 @@ class Meetup {
     let name = group.name;
     let city = group.city;
     let location = group.localized_location;
-    let imageUrl = group.group_photo.photo_link;
+
+    let photo = group.group_photo;
+    let imageUrl = "https://developers.google.com/programs/community/images/logo-lockup-gdg-horizontal.png";
+    if (photo !== undefined) {
+      imageUrl = group.group_photo.photo_link;
+    }
+    
     let meetupID = group.urlname;
     return new Group(name, city, location, imageUrl, meetupID);
   }
