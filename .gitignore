@@ -60,3 +60,4 @@ typings/
 **/.firebaserc
 
 secrets.json
+.vscode/**

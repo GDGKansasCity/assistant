@@ -9,7 +9,7 @@ const directories = {
   'EventsForGroup': ':urlname/events'
 };
 const queries = {
-  'NearbyGroups': 'photo-host=secure&lon=:lon&text=Google+Developer+Group&lat=:lat&page=2&only=name,city,localized_location,group_photo.photo_link,urlname',
+  'NearbyGroups': 'photo-host=secure&order=distance&lon=:lon&text=Google+Developer+Group&lat=:lat&page=2&only=name,city,localized_location,group_photo.photo_link,urlname',
   'EventsForGroup': 'photo-host=secure&page=1&fields=featured_photo&only=id,venue,time,utc_offset,name,link,featured_photo.photo_link,description'
 };
 
@@ -92,7 +92,7 @@ class Meetup {
         let array = [];
         for (var i = events.length - 1; i >= 0; i--) {
           let event = events[i];
-          console.log(JSON.stringify(event));
+          console.log('event: ' + JSON.stringify(event));
           array[i] = this.parseEvent(event);
         }
         return array;
