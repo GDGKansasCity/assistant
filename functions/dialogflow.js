@@ -69,6 +69,13 @@ app.intent('usename.persistconfirmation', (conv, params, granted) => {
 });
 
 app.intent('meetup.next', conv => {
+  return meetup(conv);
+});
+app.intent('suggestion.nextmeetup.yes', conv => {
+  return meetup(conv);
+});
+
+function meetup(conv) {
   let meetupID = "GDGSTL"; // TODO: conv.user.storage.meetup
   if (!meetupID) return conv.ask(`Find the nearest group first.`);
 
@@ -98,7 +105,7 @@ app.intent('meetup.next', conv => {
       console.error(error);
       conv.ask(`Whoops, I had trouble getting the next meetup. Can I help with anything else?`);
     });
-});
+}
 
 app.intent('group.closest', conv => {
   console.log('intent: group.closest');
