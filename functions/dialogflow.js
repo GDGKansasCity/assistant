@@ -76,7 +76,7 @@ app.intent('suggestion.nextmeetup.yes', conv => {
 });
 
 function meetup(conv) {
-  let meetupID = "GDGSTL"; // TODO: conv.user.storage.meetup
+  let meetupID = "GDG-Kansas-City"; // TODO: conv.user.storage.meetup
   if (!meetupID) return conv.ask(`Find the nearest group first.`);
 
   let meetup = new Meetup();
